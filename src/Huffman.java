@@ -1,3 +1,6 @@
+import java.awt.TextArea;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -7,7 +10,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Huffman {
@@ -19,23 +26,59 @@ public class Huffman {
 	private int buffer; // 8-bit buffer of bits to write out
 	private int n; // number of bits remaining in buffer
 
+	private static TextArea codeView;
+
 	public static void main(String[] args) {
 		Huffman huffman = new Huffman();
-		File file = huffman.chooseFile();
-		/// TODO JFrame for compress and de-compress options
 
-		if (file != null) {
-			File encryptedFile = huffman.compress(file);
-			huffman.decompress(encryptedFile);
-		}
+		JFrame frame = new JFrame("HUFFMAN");
+		frame.setVisible(true);
+		frame.setSize(500, 250);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		JPanel panel = new JPanel();
+		frame.add(panel);
+		JButton button = new JButton("compress");
+		panel.add(button);
+		button.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				huffman.compress();
+
+			}
+		});
+
+		JButton button2 = new JButton("de-compress");
+		panel.add(button2);
+		button2.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				huffman.decompress();
+
+			}
+		});
+
+		codeView = new TextArea();
+
+		panel.add(codeView);
+
 	}
 
-	private File compress(File file) {
+	private File compress() {
+		File file = chooseFile();
+
+		long executionTime ;
+		double compressionRatio ;
+
 		File encryptedFile = new File(file.getParent() + "/encrypted_" + file.getName());
 		try {
+
 			/// read file
 			String text = Files.readString(file.toPath());
 			System.out.println("org: " + text);
+			long startTime = System.currentTimeMillis();
 			// process ..
 			// get frequency per char
 			countChars(text);
@@ -59,6 +102,8 @@ public class Huffman {
 			for (int i = 0; i < text.length(); i++) {
 				encryptedTest += dictionary.get(text.charAt(i));
 			}
+			long endTime = System.currentTimeMillis();
+
 			System.out.println("encryptedTest: " + encryptedTest);
 			/// write encrypted file
 			BinaryOut binaryOut = new BinaryOut(encryptedFile.getAbsolutePath());
@@ -70,6 +115,15 @@ public class Huffman {
 				}
 			}
 			binaryOut.flush();
+			this.codeView.setText(dictionary.toString());
+			// System.out.println(dictionary.toString());
+			compressionRatio = (double)(text.length() * 8) / (encryptedTest.length());
+			executionTime = endTime - startTime;
+			JOptionPane.showMessageDialog(new JFrame(),
+					"file is successfully compressed in same directory you chose file from with name: encrypted_"
+							+ file.getName() + "\nCompression Ratio= " + compressionRatio + "\nExecution Time="
+							+ executionTime
+							+ " milliseconds\n ***Codes in Main program panel won't saved anywhere, closing program wipe codes! so You can compress & de-compress using same program instance please!");
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -79,7 +133,10 @@ public class Huffman {
 
 	}
 
-	public void decompress(File encryptedFile) {
+	public void decompress() {
+
+		File encryptedFile = chooseFile();
+		double executionTime = 0;
 		try {
 			File decryptedFile = new File(encryptedFile.getParent() + "/decrypted_" + encryptedFile.getName());
 //		read file
@@ -96,6 +153,7 @@ public class Huffman {
 			String originalText = "";
 			String code = "";
 
+			long startTime = System.currentTimeMillis();
 			int j = 1;
 			int start = 0;
 			for (int i = 0; i < textToDecompress.length(); i++) {
@@ -119,10 +177,16 @@ public class Huffman {
 
 			}
 			originalText = originalText.substring(0, originalText.length() - 1); // remove last byte which was appended
-																					// by last flush read.
+			long endTime = System.currentTimeMillis();
+			// by last flush read.
 			System.out.println("originalText: " + originalText);
 
 			Files.write(decryptedFile.toPath(), originalText.getBytes());
+			executionTime = endTime - startTime;
+			JOptionPane.showMessageDialog(new JFrame(),
+					"file is successfully de-compressed in same directory you chose file from with name: decrypted_"
+							+ encryptedFile.getName() + "\nExecution Time=" + executionTime + " milliseconds");
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
