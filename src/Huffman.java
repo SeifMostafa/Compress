@@ -2,8 +2,12 @@ import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -69,14 +73,16 @@ public class Huffman {
 	private File compress() {
 		File file = chooseFile();
 
-		long executionTime ;
-		double compressionRatio ;
+		long executionTime;
+		double compressionRatio;
 
 		File encryptedFile = new File(file.getParent() + "/encrypted_" + file.getName());
 		try {
 
 			/// read file
-			String text = Files.readString(file.toPath());
+			InputStream inputStream = new FileInputStream(file);
+			String text = readFromInputStream(inputStream);
+
 			System.out.println("org: " + text);
 			long startTime = System.currentTimeMillis();
 			// process ..
@@ -117,7 +123,7 @@ public class Huffman {
 			binaryOut.flush();
 			this.codeView.setText(dictionary.toString());
 			// System.out.println(dictionary.toString());
-			compressionRatio = (double)(text.length() * 8) / (encryptedTest.length());
+			compressionRatio = (double) (text.length() * 8) / (encryptedTest.length());
 			executionTime = endTime - startTime;
 			JOptionPane.showMessageDialog(new JFrame(),
 					"file is successfully compressed in same directory you chose file from with name: encrypted_"
@@ -249,5 +255,16 @@ public class Huffman {
 		}
 		generateCodes(root.left, s + "0");
 		generateCodes(root.right, s + "1");
+	}
+
+	private String readFromInputStream(InputStream inputStream) throws IOException {
+		StringBuilder resultStringBuilder = new StringBuilder();
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				resultStringBuilder.append(line).append("\n");
+			}
+		}
+		return resultStringBuilder.toString();
 	}
 }
